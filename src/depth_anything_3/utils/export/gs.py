@@ -14,7 +14,7 @@
 
 import os
 from typing import Literal, Optional
-import moviepy.editor as mpy
+import moviepy as mpy
 import torch
 
 from depth_anything_3.model.utils.gs_renderer import run_renderer_in_chunk_w_trj_mode

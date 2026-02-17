@@ -597,7 +597,7 @@ class DepthAnything3App:
         """
         demo = self.create_app()
         demo.queue(max_size=20).launch(
-            show_error=True, ssr_mode=False, server_name=host, server_port=port, **kwargs
+            show_error=True, server_name=host, server_port=port, **kwargs
         )
 
 
