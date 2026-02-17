@@ -196,6 +196,117 @@ Model = create_object(load_config("path/to/new/config"))
 
 
 
+## 🛠️ Community Enhancements
+
+This fork includes additional tools and documentation for enhanced user experience:
+
+### Video Processing & 3DGS Tools
+
+**📹 Video Depth Estimation**
+- `process_video.py` - Batch video depth estimation with configurable FPS extraction
+  - Supports 720p, 1080p resolution
+  - Exports depth maps, confidence maps, and processed frames
+  - Example: `python process_video.py` (edit paths in script)
+
+**🎯 3D Gaussian Splatting**
+- `generate_3dgs.py` - Direct 3DGS generation from DA3 outputs
+- `run_da3_3dgs.sh` - Automated 3DGS pipeline
+- `run_gradio_direct.sh` - Gradio-based 3DGS UI
+- See: [DA3_3DGS_GUIDE.md](DA3_3DGS_GUIDE.md) for complete workflow
+
+**📊 Long Video Streaming**
+- `run_sugar_streaming.sh` - DA3-Streaming for ultra-long videos
+  - Supports chunking with overlap (memory-efficient)
+  - Includes loop closure detection
+  - Generates point clouds in PLY format
+  - See: [DA3_STREAMING_GUIDE.md](DA3_STREAMING_GUIDE.md)
+
+### Performance Benchmarking
+
+**🏆 RTX 5070 Benchmark**
+- `benchmark.py` - Comprehensive performance testing tool
+- Tests all DA3 model sizes (SMALL, BASE, LARGE, GIANT)
+- See: [PERFORMANCE_REPORT.md](PERFORMANCE_REPORT.md) for detailed results
+- Key findings:
+  - DA3-BASE: 60.1ms inference, 16.6 FPS @ 504p
+  - DA3-LARGE: 88.1ms inference, 11.3 FPS @ 504p
+  - DA3-GIANT: 1.07s inference, 5.12GB VRAM @ 504p
+
+### COLMAP Integration
+
+**🔄 Format Conversion**
+- `convert_da3_to_colmap.py` - Convert DA3 outputs to COLMAP format
+  - Camera poses (COLMAP format)
+  - Depth maps
+  - Intrinsics matrices
+  - Supports both single images and video sequences
+
+### Testing & Utilities
+
+**🧪 Quick Testing**
+- `test_inference.py` - Quick model inference testing
+- `cleaned_help.txt`, `ns_help.txt` - Additional documentation
+- `inspect_npz.py` - NPZ file inspection tool
+- `run_da3_glomap_pipeline.py` - GLOMAP integration pipeline
+- `run_da3_to_3dgs_direct.py` - Direct DA3 to 3DGS conversion
+
+### Installation & Setup
+
+**📖 Complete Setup Guide**
+- [REPRODUCTION.md](REPRODUCTION.md) - Complete installation guide
+  - WSL2 + CUDA 12.4 environment setup
+  - Bug fixes (moviepy import, HF mirror)
+  - Model download instructions
+- [REPRODUCTION_SUMMARY.md](REPRODUCTION_SUMMARY.md) - Quick reference
+
+**⚙️ Model Weights**
+- `weights/model.safetensors` - DA3 model checkpoints
+- `weights/config.json` - Model configuration
+- `weights/dino_salad.ckpt` - SALAD weights
+
+### Getting Started
+
+1. **Basic Inference**:
+   ```bash
+   python test_inference.py
+   ```
+
+2. **Video Processing**:
+   ```bash
+   # Edit VIDEO_PATH in process_video.py
+   python process_video.py
+   ```
+
+3. **3DGS Generation**:
+   ```bash
+   bash run_da3_3dgs.sh
+   ```
+
+4. **Long Video Streaming**:
+   ```bash
+   # Edit VIDEO_PATH in run_sugar_streaming.sh
+   bash run_sugar_streaming.sh
+   ```
+
+5. **Performance Benchmark**:
+   ```bash
+   python benchmark.py
+   ```
+
+### Features
+
+✅ **Memory Efficient** - DA3-Streaming handles ultra-long videos in <12GB VRAM
+✅ **Loop Closure** - Prevents drift with SIM3 optimization
+✅ **Batch Processing** - Automated video frame extraction and processing
+✅ **COLMAP Ready** - Direct format conversion for downstream tools
+✅ **RTX 5070 Tested** - Optimized for latest GPU architectures
+
+---
+
+**Fork by**: [@tianxingleo](https://github.com/tianxingleo)
+**Date**: 2026-02-17
+**Tested on**: WSL2 Ubuntu, CUDA 12.8, RTX 5070
+
 ## 📚 Useful Documentation
 
 - 🖥️ [Command Line Interface](docs/CLI.md)
