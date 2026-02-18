@@ -36,3 +36,11 @@ temp*.png
 
 *.png
 /output 
+
+# 大文件权重和模型
+weights/model.safetensors
+weights/dino_salad.ckpt
+
+# 大型视频和图片
+assets/images/demo320-2.gif
+assets/examples/robot_unitree.mp4
