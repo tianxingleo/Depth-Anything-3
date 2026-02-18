@@ -18,6 +18,7 @@
 |------|------|
 | `run_da3_to_3dgs_aligned.py` | **融合 Pipeline** — 训练+双重对齐，基于 nerfstudio splatfacto |
 | `batch_align_existing_ply.py` | **批量扶正** — 对已有 PLY 文件进行 Open3D 扶正 |
+| `align_target_object_ply.py` | **V5 智能对齐** — 自适应尺度 + DBSCAN 聚类分析，适用于复杂伪影场景 |
 | `auto_align_ply.py` | **独立工具** — 对单个 PLY 文件扶正 |
 
 ### Shell 脚本 (旧版, 基于 SuGaR/vanilla 3DGS)
@@ -71,6 +72,21 @@ python batch_align_existing_ply.py --threshold 0.05 --translate_to_ground
 ```bash
 python auto_align_ply.py input.ply output.ply
 python auto_align_ply.py model.ply --inplace
+```
+
+### 4. V5 智能对齐 (复杂场景推荐)
+
+针对任意尺度场景和复杂伪影场景的智能对齐脚本，使用 DBSCAN 聚类分析：
+
+```bash
+# 基本用法
+python align_target_object_ply.py --input_file /path/to/model.ply
+
+# 特点：
+# - 自动计算场景尺度，动态调整参数
+# - 支持毫米/米等任意单位
+# - DBSCAN 聚类判定正反方向
+# - 解决固定阈值导致的切片为空问题
 ```
 
 ---
@@ -176,6 +192,44 @@ python auto_align_ply.py input.ply output.ply
 python auto_align_ply.py model.ply --inplace
 python auto_align_ply.py model.ply --distance_threshold 0.05 --translate_to_ground
 ```
+
+---
+
+### ⭐ `align_target_object_ply.py` — V5 智能对齐脚本
+
+**针对任意尺度场景的智能对齐脚本 (自适应尺度 + 聚类判定)**
+
+**核心特性：**
+1. 自动计算场景 Bounding Box 大小，动态调整切片厚度和聚类参数
+2. 解决模型单位是 mm 或任意比例时，固定阈值导致切片为空的问题
+3. 使用 DBSCAN 聚类分析连通性，智能判定方向
+4. 增加详细的切片点数日志，方便调试
+
+**适用场景：**
+- 复杂伪影场景（含有噪点、异常值）
+- 非标准单位模型（毫米、厘米、任意比例）
+- 传统固定阈值方法失效的场景
+
+**动态参数设定：**
+```python
+# 平面拟合阈值: 场景尺寸的 1%
+dist_thresh = max(0.001, scene_size * 0.01)
+
+# 切片厚度: 场景尺寸的 5%
+slice_limit = max(0.005, scene_size * 0.05)
+
+# 聚类半径: 场景尺寸的 2%
+cluster_eps = max(0.002, scene_size * 0.02)
+```
+
+**使用示例：**
+```bash
+python align_target_object_ply.py --input_file /path/to/model.ply
+```
+
+**输出文件：**
+- 输入：`model.ply`
+- 输出：`model_adaptive_aligned.ply`
 
 ---
 
@@ -315,11 +369,17 @@ python run_da3_to_3dgs_aligned.py --skip_open3d
 
 ## 📝 更新日志
 
-- **2026-02-18 v2**: 
+- **2026-02-18 v3**:
+  - 🆕 `align_target_object_ply.py` — **V5 智能对齐脚本**
+    - 自适应尺度计算，支持任意单位模型
+    - DBSCAN 聚类分析，智能判定正反方向
+    - 解决复杂伪影场景的对齐问题
+
+- **2026-02-18 v2**:
   - 🆕 `run_da3_to_3dgs_aligned.py` — Python 高性能融合 Pipeline
   - 🆕 `batch_align_existing_ply.py` — 批量扶正已有 PLY
   - 性能优化: 基于 `run_da3_to_3dgs_direct.py` 模式重写
 
-- **2026-02-18 v1**: 
+- **2026-02-18 v1**:
   - Shell 脚本版本（方案A/B/融合）
   - `auto_align_ply.py` 独立扶正工具

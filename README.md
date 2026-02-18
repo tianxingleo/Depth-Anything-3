@@ -40,9 +40,11 @@ All models are trained exclusively on **public academic datasets**.
 
 
 ## 📰 News
+- **18-02-2026:** 🎯 **智能对齐脚本 V5 发布**！支持自适应尺度和 DBSCAN 聚类分析，完美解决复杂伪影场景的对齐问题。详见 [对齐 Pipeline 指南](docs/ALIGNMENT_PIPELINE_GUIDE.md)。
+- **18-02-2026:** 🚀 **DA3 → 3DGS 双重对齐 Pipeline** 上线！结合 COLMAP 和 Open3D 的优势，实现训练前粗对齐 + 训练后精细校正。
 - **11-12-2025:** 🚀 New models and [**DA3-Streaming**](da3_streaming/README.md) released! Handle ultra-long video sequence inference with less than 12GB GPU memory via sliding-window streaming inference. Special thanks to [Kai Deng](https://github.com/DengKaiCQ) for his contribution to DA3-Streaming!
 - **08-12-2025:** 📊 [Benchmark evaluation pipeline](docs/BENCHMARK.md) released! Evaluate pose estimation & 3D reconstruction on 5 datasets.
-- **30-11-2025:** Add [`use_ray_pose`](#use-ray-pose) and [`ref_view_strategy`](docs/funcs/ref_view_strategy.md) (reference view selection for multi-view inputs).   
+- **30-11-2025:** Add [`use_ray_pose`](#use-ray-pose) and [`ref_view_strategy`](docs/funcs/ref_view_strategy.md) (reference view selection for multi-view inputs).
 - **25-11-2025:** Add [Awesome DA3 Projects](#-awesome-da3-projects), a community-driven section featuring DA3-based applications.
 - **14-11-2025:** Paper, project page, code and models are all released.
 
@@ -204,32 +206,43 @@ Model = create_object(load_config("path/to/new/config"))
 
 **完整 3D 重建生态系统**：
 
-1. **🎯 DA3 → SuGaR Pipeline**（新增）
+1. **🎯 智能点云对齐系统**（新增，2026-02-18）
+   - **V5 智能对齐脚本**：自适应尺度 + DBSCAN 聚类分析
+     - 自动计算场景尺度，动态调整参数
+     - 支持毫米/米/任意比例单位
+     - 完美解决复杂伪影场景的对齐问题
+   - **DA3 → 3DGS 双重对齐 Pipeline**：
+     - 训练前 COLMAP 对齐（曼哈顿世界假设）
+     - 训练后 Open3D RANSAC 精细校正
+     - 智能跳过机制，避免过度旋转
+   - 完整文档：[ALIGNMENT_PIPELINE_GUIDE.md](docs/ALIGNMENT_PIPELINE_GUIDE.md)
+
+2. **🎯 DA3 → SuGaR Pipeline**（新增）
    - 一键将 DA3 输出转换为 SuGaR 可用的 COLMAP 格式
    - 自动完成 4 个步骤：格式转换 → 二进制转换 → 数据整理 → SuGaR 训练
    - 支持快速预览（15-30分钟）、标准质量（1小时）、高质量（2小时）
    - 输出可直接在 Blender 中编辑或在线查看
    - 完整文档：[DA3_TO_SUGAR_QUICKSTART.md](DA3_TO_SUGAR_QUICKSTART.md)
 
-2. **🚀 DA3 → DN-Splatter Pipeline**（新增）
+3. **🚀 DA3 → DN-Splatter Pipeline**（新增）
    - 端到端 pipeline：DA3 → DN-Splatter → 3DGS PLY
    - 支持深度约束和法线约束，有效消除白墙漂浮物
    - 自动训练 30000 步并导出标准 PLY 格式
    - 内存优化：支持 RTX 5070，<12GB VRAM
 
-3. **📹 Video Processing & Streaming**（增强）
+4. **📹 Video Processing & Streaming**（增强）
    - 批量视频深度估计工具（支持 720p/1080p）
    - DA3-Streaming 支持超长视频（<12GB VRAM）
    - 滑动窗口推理 + 循环闭包检测
    - 生成高质量点云（PLY 格式）
 
-4. **🔧 COLMAP Integration**（增强）
+5. **🔧 COLMAP Integration**（增强）
    - 改进的 DA3 到 COLMAP 格式转换工具
    - 支持文本格式和二进制格式
    - 完整的参数验证和错误提示
    - 兼容 SuGaR、DN-Splatter 等下游工具
 
-5. **⚡ Performance Benchmarking**（新增）
+6. **⚡ Performance Benchmarking**（新增）
    - 全面的性能测试工具（测试所有 DA3 模型）
    - RTX 5070 优化结果
 
@@ -238,6 +251,18 @@ Model = create_object(load_config("path/to/new/config"))
 ### 📦 Complete Toolset
 
 #### 🎯 3D Gaussian Splatting Pipelines
+
+**智能点云对齐系统**（新增，2026-02-18）
+- `align_target_object_ply.py` - **V5 智能对齐脚本**
+  - 自适应尺度计算，支持任意单位模型
+  - DBSCAN 聚类分析，智能判定正反方向
+  - 解决复杂伪影场景的对齐问题
+- `run_da3_to_3dgs_aligned.py` - **双重对齐 Pipeline**
+  - COLMAP + Open3D 双重对齐
+  - 训练前粗对齐 + 训练后精细校正
+- `batch_align_existing_ply.py` - 批量扶正已有 PLY
+- `auto_align_ply.py` - 独立扶正工具
+- 文档：[ALIGNMENT_PIPELINE_GUIDE.md](docs/ALIGNMENT_PIPELINE_GUIDE.md)
 
 **DA3 × SuGaR**（新增，推荐用于高质量重建）
 - `da3_to_sugar_pipeline.sh` - 一键完整 pipeline
@@ -384,6 +409,7 @@ python benchmark.py
 ## 📚 Useful Documentation
 
 ### Pipeline & Usage
+- 🎯 [点云自动扶正 Pipeline 指南](docs/ALIGNMENT_PIPELINE_GUIDE.md) - **智能对齐系统完整文档**
 - 🎯 [DA3 → SuGaR Pipeline Guide](DA3_TO_SUGAR_PIPELINE.md) - 完整pipeline文档
 - ⚡ [DA3 → SuGaR Quick Start](DA3_TO_SUGAR_QUICKSTART.md) - 快速开始指南
 - 🎯 [SuGaR Modes Technical Details](SUGAR_MODES_TECHNICAL_DETAILS.md) - 模式技术对比
