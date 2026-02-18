@@ -198,127 +198,188 @@ Model = create_object(load_config("path/to/new/config"))
 
 ## 🛠️ Community Enhancements
 
-This fork includes additional tools and documentation for enhanced user experience:
+这个 fork 在原仓库基础上，新增了完整的 3D 重建生态系统，让用户可以从视频直接生成高质量的 3D 模型。
 
-### Video Processing & 3DGS Tools
+### 🌟 What's New (vs Original Repository)
 
-**📹 Video Depth Estimation**
-- `process_video.py` - Batch video depth estimation with configurable FPS extraction
-  - Supports 720p, 1080p resolution
-  - Exports depth maps, confidence maps, and processed frames
-  - Example: `python process_video.py` (edit paths in script)
+**完整 3D 重建生态系统**：
 
-**🎯 3D Gaussian Splatting**
+1. **🎯 DA3 → SuGaR Pipeline**（新增）
+   - 一键将 DA3 输出转换为 SuGaR 可用的 COLMAP 格式
+   - 自动完成 4 个步骤：格式转换 → 二进制转换 → 数据整理 → SuGaR 训练
+   - 支持快速预览（15-30分钟）、标准质量（1小时）、高质量（2小时）
+   - 输出可直接在 Blender 中编辑或在线查看
+   - 完整文档：[DA3_TO_SUGAR_QUICKSTART.md](DA3_TO_SUGAR_QUICKSTART.md)
 
-**DA3 × DN-Splatter Pipeline** (推荐)
-- `run_da3_to_dn_splatter_pipeline.py` - End-to-end pipeline: DA3 → DN-Splatter → 3DGS PLY
-  - 自动转换 DA3 Streaming 输出为 DN-Splatter 格式
-  - 支持深度约束和法线约束，消除白墙漂浮物
-  - 自动训练 30000 步并导出标准 PLY
-  - 内存优化：支持 RTX 5070，<12GB VRAM
-- `run_da3_to_dn_splatter.py` - Standalone DA3 to DN-Splatter converter
-- `run_direct_dn_splatter.py` - Direct DN-Splatter training
-- `batch_export_ply.py` - Batch export multiple checkpoints to PLY
-- See: [DN_SPLATTER_PIPELINE_GUIDE.md](docs/DN_SPLATTER_PIPELINE_GUIDE.md) for complete workflow
+2. **🚀 DA3 → DN-Splatter Pipeline**（新增）
+   - 端到端 pipeline：DA3 → DN-Splatter → 3DGS PLY
+   - 支持深度约束和法线约束，有效消除白墙漂浮物
+   - 自动训练 30000 步并导出标准 PLY 格式
+   - 内存优化：支持 RTX 5070，<12GB VRAM
 
-**Classic 3DGS**
-- `generate_3dgs.py` - Direct 3DGS generation from DA3 outputs
-- `run_da3_3dgs.sh` - Automated 3DGS pipeline
-- `run_gradio_direct.sh` - Gradio-based 3DGS UI
-- See: [DA3_3DGS_GUIDE.md](DA3_3DGS_GUIDE.md) for complete workflow
+3. **📹 Video Processing & Streaming**（增强）
+   - 批量视频深度估计工具（支持 720p/1080p）
+   - DA3-Streaming 支持超长视频（<12GB VRAM）
+   - 滑动窗口推理 + 循环闭包检测
+   - 生成高质量点云（PLY 格式）
 
-**📊 Long Video Streaming**
-- `run_sugar_streaming.sh` - DA3-Streaming for ultra-long videos
-  - Supports chunking with overlap (memory-efficient)
-  - Includes loop closure detection
-  - Generates point clouds in PLY format
-  - See: [DA3_STREAMING_GUIDE.md](DA3_STREAMING_GUIDE.md)
+4. **🔧 COLMAP Integration**（增强）
+   - 改进的 DA3 到 COLMAP 格式转换工具
+   - 支持文本格式和二进制格式
+   - 完整的参数验证和错误提示
+   - 兼容 SuGaR、DN-Splatter 等下游工具
 
-### Performance Benchmarking
+5. **⚡ Performance Benchmarking**（新增）
+   - 全面的性能测试工具（测试所有 DA3 模型）
+   - RTX 5070 优化结果
 
-**🏆 RTX 5070 Benchmark**
-- `benchmark.py` - Comprehensive performance testing tool
-- Tests all DA3 model sizes (SMALL, BASE, LARGE, GIANT)
-- See: [PERFORMANCE_REPORT.md](PERFORMANCE_REPORT.md) for detailed results
-- Key findings:
-  - DA3-BASE: 60.1ms inference, 16.6 FPS @ 504p
-  - DA3-LARGE: 88.1ms inference, 11.3 FPS @ 504p
-  - DA3-GIANT: 1.07s inference, 5.12GB VRAM @ 504p
+---
 
-### COLMAP Integration
+### 📦 Complete Toolset
 
-**🔄 Format Conversion**
-- `convert_da3_to_colmap.py` - Convert DA3 outputs to COLMAP format
-  - Camera poses (COLMAP format)
-  - Depth maps
-  - Intrinsics matrices
-  - Supports both single images and video sequences
+#### 🎯 3D Gaussian Splatting Pipelines
 
-### Testing & Utilities
+**DA3 × SuGaR**（新增，推荐用于高质量重建）
+- `da3_to_sugar_pipeline.sh` - 一键完整 pipeline
+- `convert_da3_to_colmap.py` - DA3 输出转 COLMAP 文本格式（已改进）
+- `colmap_text_to_binary.py` - COLMAP 文本转二进制格式
+- 文档：
+  - [DA3_TO_SUGAR_QUICKSTART.md](DA3_TO_SUGAR_QUICKSTART.md) - 快速开始
+  - [DA3_TO_SUGAR_PIPELINE.md](DA3_TO_SUGAR_PIPELINE.md) - 完整指南
+  - [DA3_TO_SUGAR_IMPLEMENTATION.md](DA3_TO_SUGAR_IMPLEMENTATION.md) - 实现细节
 
-**🧪 Quick Testing**
-- `test_inference.py` - Quick model inference testing
-- `cleaned_help.txt`, `ns_help.txt` - Additional documentation
-- `inspect_npz.py` - NPZ file inspection tool
-- `run_da3_glomap_pipeline.py` - GLOMAP integration pipeline
-- `run_da3_to_3dgs_direct.py` - Direct DA3 to 3DGS conversion
+**DA3 × DN-Splatter**（新增，推荐用于快速重建）
+- `run_da3_to_dn_splatter_pipeline.py` - 端到端 pipeline
+- `run_da3_to_dn_splatter.py` - 独立转换工具
+- `run_direct_dn_splatter.py` - 直接 DN-Splatter 训练
+- `batch_export_ply.py` - 批量导出 PLY
+- 文档：[DN_SPLATTER_PIPELINE_GUIDE.md](docs/DN_SPLATTER_PIPELINE_GUIDE.md)
 
-### Installation & Setup
+**Classic 3DGS**（新增，直接生成）
+- `generate_3dgs.py` - 直接从 DA3 输出生成 3DGS
+- `run_da3_3dgs.sh` - 自动化 pipeline
+- `run_gradio_direct.sh` - Gradio UI
+- 文档：[DA3_3DGS_GUIDE.md](DA3_3DGS_GUIDE.md)
 
-**📖 Complete Setup Guide**
-- [REPRODUCTION.md](REPRODUCTION.md) - Complete installation guide
-  - WSL2 + CUDA 12.4 environment setup
-  - Bug fixes (moviepy import, HF mirror)
-  - Model download instructions
-- [REPRODUCTION_SUMMARY.md](REPRODUCTION_SUMMARY.md) - Quick reference
+#### 📹 Video Processing & Streaming
 
-**⚙️ Model Weights**
-- `weights/model.safetensors` - DA3 model checkpoints
-- `weights/config.json` - Model configuration
-- `weights/dino_salad.ckpt` - SALAD weights
+**Video Depth Estimation**
+- `process_video.py` - 批量视频深度估计
+  - 支持可配置 FPS 提取
+  - 支持 720p、1080p 分辨率
+  - 导出深度图、置信度图、处理后的帧
 
-### Getting Started
+**Long Video Streaming**
+- `run_sugar_streaming.sh` - DA3-Streaming 处理超长视频
+  - 分块处理 + 重叠（内存高效）
+  - 循环闭包检测
+  - 生成 PLY 点云
+- 文档：[DA3_STREAMING_GUIDE.md](DA3_STREAMING_GUIDE.md)
 
-1. **Basic Inference**:
-   ```bash
-   python test_inference.py
-   ```
+#### 🔧 Format Conversion & Integration
 
-2. **Video Processing**:
-   ```bash
-   # Edit VIDEO_PATH in process_video.py
-   python process_video.py
-   ```
+**COLMAP Integration**（增强）
+- `convert_da3_to_colmap.py` - DA3 输出转 COLMAP 格式（已改进）
+  - ✅ 完整的参数验证和错误提示
+  - ✅ 支持中文注释和输出
+  - ✅ 自动符号链接或复制图像
+  - ✅ 支持文本格式和二进制格式转换
+- `colmap_text_to_binary.py` - COLMAP 文本转二进制
 
-3. **3DGS Generation**:
-   ```bash
-   bash run_da3_3dgs.sh
-   ```
+**其他集成**
+- `run_da3_glomap_pipeline.py` - GLOMAP 集成 pipeline
+- `run_da3_to_3dgs_direct.py` - 直接 DA3 到 3DGS 转换
 
-4. **Long Video Streaming**:
-   ```bash
-   # Edit VIDEO_PATH in run_sugar_streaming.sh
-   bash run_sugar_streaming.sh
-   ```
+#### 📊 Performance & Testing
 
-5. **Performance Benchmark**:
-   ```bash
-   python benchmark.py
-   ```
+**Benchmarking**
+- `benchmark.py` - 全面的性能测试工具
+  - 测试所有 DA3 模型大小（SMALL, BASE, LARGE, GIANT）
+  - 测量推理时间、FPS、VRAM 使用
+- 文档：[PERFORMANCE_REPORT.md](PERFORMANCE_REPORT.md)
 
-### Features
+**Testing & Utilities**
+- `test_inference.py` - 快速推理测试
+- `inspect_npz.py` - NPZ 文件检查工具
+- `cleaned_help.txt`, `ns_help.txt` - 额外文档
 
-✅ **Memory Efficient** - DA3-Streaming handles ultra-long videos in <12GB VRAM
-✅ **Loop Closure** - Prevents drift with SIM3 optimization
-✅ **Batch Processing** - Automated video frame extraction and processing
-✅ **COLMAP Ready** - Direct format conversion for downstream tools
-✅ **RTX 5070 Tested** - Optimized for latest GPU architectures
+#### 📖 Installation & Documentation
+
+**Setup Guides**
+- [REPRODUCTION.md](REPRODUCTION.md) - 完整安装指南
+  - WSL2 + CUDA 12.8 环境设置
+  - Bug 修复（moviepy 导入、HF 镜像）
+  - 模型下载说明
+- [REPRODUCTION_SUMMARY.md](REPRODUCTION_SUMMARY.md) - 快速参考
+
+**Model Weights**
+- `weights/model.safetensors` - DA3 模型检查点
+- `weights/config.json` - 模型配置
+- `weights/dino_salad.ckpt` - SALAD 权重
+
+---
+
+### 🚀 Getting Started
+
+#### 快速开始 - 推荐流程
+
+**1. 基础推理测试**
+```bash
+python test_inference.py
+```
+
+**2. SuGaR Pipeline（推荐用于高质量 3D 重建）**
+```bash
+cd /home/ltx/projects/Depth-Anything-3
+
+# 快速预览（约30分钟）
+./da3_to_sugar_pipeline.sh output/sugar_streaming my_scene dn_consistency short false true
+
+# 标准质量（约1小时）
+./da3_to_sugar_pipeline.sh output/sugar_streaming my_scene dn_consistency short true false
+```
+
+**3. DN-Splatter Pipeline（推荐用于快速重建）**
+```bash
+python run_da3_to_dn_splatter_pipeline.py
+```
+
+**4. 视频深度估计**
+```bash
+# 编辑 process_video.py 中的 VIDEO_PATH
+python process_video.py
+```
+
+**5. 长视频流处理**
+```bash
+# 编辑 run_sugar_streaming.sh 中的 VIDEO_PATH
+bash run_sugar_streaming.sh
+```
+
+**6. 性能测试**
+```bash
+python benchmark.py
+```
+
+---
+
+### ✨ Features & Benefits
+
+✅ **完整生态** - 从视频到 3D 模型的完整 pipeline
+✅ **内存高效** - DA3-Streaming 支持超长视频（<12GB VRAM）
+✅ **循环闭包** - SIM3 优化防止漂移
+✅ **批量处理** - 自动化视频帧提取和处理
+✅ **COLMAP 就绪** - 直接格式转换用于下游工具
+✅ **RTX 5070 优化** - 针对最新 GPU 架构优化
+✅ **中文支持** - 工具和文档包含中文注释
+✅ **详细文档** - 每个功能都有完整的使用指南
 
 ---
 
 **Fork by**: [@tianxingleo](https://github.com/tianxingleo)
-**Date**: 2026-02-17
+**Last Updated**: 2026-02-18
 **Tested on**: WSL2 Ubuntu, CUDA 12.8, RTX 5070
+**License**: Inherits from original repository
 
 ## 📚 Useful Documentation
 
