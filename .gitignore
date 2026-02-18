@@ -47,6 +47,7 @@ assets/examples/robot_unitree.mp4
 
 # 训练输出和日志
 da3_dn_splatter_output/
+dn_splatter_output/
 
 *.ckpt
 *.txt

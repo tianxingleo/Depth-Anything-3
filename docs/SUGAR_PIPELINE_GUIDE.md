@@ -1,16 +1,18 @@
-# Depth Anything 3 → SuGaR Pipeline 完整指南
+# Depth Anything 3 → Gaussian Splatting 训练完整指南
 
 > **最后更新**: 2026-02-18
 >
-> 本文档介绍如何使用 Depth Anything 3 (DA3) 的输出，通过 SuGaR 框架进行 3D Gaussian Splatting 训练和高质量 Mesh 重建。
+> 本文档介绍如何使用 Depth Anything 3 (DA3) 的输出，进行 Gaussian Splatting 训练和 Mesh 重建。
+> 涵盖 **2DGS**、**3DGS**、**SuGaR** 三种方案的完整对比和使用指南。
 
 ---
 
 ## 目录
 
+- [0. 方案总览与推荐](#0-方案总览与推荐)
 - [1. 整体架构](#1-整体架构)
-- [2. 一键Pipeline脚本](#2-一键pipeline脚本-da3_to_sugar_pipelinesh)
-- [3. 正则化方法详解](#3-正则化方法详解)
+- [2. 一键Pipeline脚本](#2-一键pipeline脚本)
+- [3. 正则化方法详解（SuGaR）](#3-正则化方法详解)
 - [4. SuGaR训练脚本对比](#4-sugar训练脚本对比)
 - [5. 训练参数详解](#5-训练参数详解)
 - [6. 推荐配置](#6-推荐配置)
@@ -19,33 +21,107 @@
 
 ---
 
-## 1. 整体架构
+## 0. 方案总览与推荐
+
+### 所有可用 Pipeline
+
+| 脚本 | 方案 | 耗时 | 几何约束 | Mesh导出 | 输出格式 |
+|------|------|------|---------|---------|---------|
+| **`da3_to_2dgs.sh`** ⭐ | 2D Gaussian Splatting | ~30分钟 | 法线一致性（内置） | TSDF（内置） | 2DGS PLY |
+| `da3_to_3dgs.sh` | Vanilla 3DGS | ~20分钟 | 无 | 无 | 3DGS PLY |
+| `da3_to_sugar_pipeline.sh` | SuGaR 完整流程 | 2-3小时 | SDF + depth-normal | SuGaR mesh | PLY + OBJ |
+| `da3_to_sugar_pipeline.sh` (fast) | SuGaR 快速 | 30-45分钟 | Coarse only | 无 | PLY |
+
+### 如何选择
 
 ```
-Depth Anything 3 输出                    SuGaR 训练
-┌─────────────────┐                    ┌──────────────────────────────────┐
-│ camera_poses.txt│                    │  1. Vanilla 3DGS (7k iter)       │
-│ intrinsic.txt   │──[转换]──────────→ │  2. Coarse SuGaR (15k iter)      │
-│ pcd/*.ply       │   COLMAP格式       │  3. Mesh Extraction              │
-│ extracted/*.png │                    │  4. Refinement (2k-15k iter)     │
-└─────────────────┘                    │  5. Texture Export (.obj)        │
-                                       └──────────────────────────────────┘
+你需要什么？
+│
+├─ 高质量 Gaussian Splatting（推荐）
+│   └─→ da3_to_2dgs.sh ⭐
+│       2D高斯盘天然贴合表面，内置法线一致性约束，不需要SDF
+│       耗时 ~30分钟，几何质量优于 3DGS
+│
+├─ 最快速度获得 Gaussian Splatting
+│   └─→ da3_to_3dgs.sh
+│       纯 vanilla 3DGS，无额外约束，最快
+│       耗时 ~20分钟
+│
+├─ 带纹理的高质量 Mesh（用于 Blender / 3D打印）
+│   └─→ da3_to_sugar_pipeline.sh (dn_consistency long true false)
+│       SuGaR 完整流程，含 SDF + mesh extraction + refinement
+│       耗时 2-3小时
+│
+└─ 快速 Mesh 预览
+    └─→ da3_to_2dgs.sh ... 30000 yes
+        2DGS 训练后 TSDF mesh导出，耗时 ~35分钟
 ```
 
-**Pipeline 总共 4 步：**
+### 关于 DA3 数据是否需要 SDF
 
-| 步骤 | 说明 | 耗时 |
-|------|------|------|
-| **[1/4]** DA3输出 → COLMAP文本格式 | 转换相机位姿、内参、点云 | ~10秒 |
-| **[2/4]** COLMAP文本 → 二进制格式 | SuGaR需要二进制格式 | ~5秒 |
-| **[3/4]** 整理SuGaR数据目录 | 复制到 `SuGaR/data/<scene>/` | ~30秒 |
-| **[4/4]** SuGaR训练 | Vanilla 3DGS + Coarse + Mesh + Refine | **30分钟~3小时** |
+**对于 COLMAP 稀疏数据**（`sugar_video_pipeline.sh`）：SDF 正则化非常重要，因为初始点云只有几千点，SDF 帮助高斯对齐到表面。
+
+**对于 DA3 稠密数据**（本文档的所有脚本）：DA3 已提供 31万+ 稠密点云和精确深度，SDF 的边际收益大幅降低。**推荐使用 2DGS**（自带法线约束，无需 SDF 的额外计算开销）。
 
 ---
 
-## 2. 一键Pipeline脚本: `da3_to_sugar_pipeline.sh`
+## 1. 整体架构
 
-### 基本用法
+```
+                                         ┌─ da3_to_2dgs.sh ──→ 2DGS训练(30k) ──→ [可选]TSDF Mesh
+                                         │
+Depth Anything 3 输出 ──[COLMAP转换]──→ ├─ da3_to_3dgs.sh ──→ 3DGS训练(30k)
+                                         │
+                                         └─ da3_to_sugar_pipeline.sh ──→ SuGaR(7k+15k+mesh+refine)
+```
+
+---
+
+## 2. 一键Pipeline脚本
+
+### ⭐ `da3_to_2dgs.sh`（推荐：2D Gaussian Splatting）
+
+2DGS 使用 2D 高斯盘（而非 3D 椭球），天然更贴合表面，**内置法线一致性约束**，不需要 SDF。
+
+```bash
+# 标准训练（30k迭代，~30分钟）
+./da3_to_2dgs.sh output/sugar_streaming my_scene
+
+# 快速预览（7k迭代，~5分钟）
+./da3_to_2dgs.sh output/sugar_streaming my_scene 7000
+
+# 训练 + 导出 TSDF mesh
+./da3_to_2dgs.sh output/sugar_streaming my_scene 30000 yes
+```
+
+| 参数 | 位置 | 默认值 | 说明 |
+|------|------|--------|------|
+| `DA3输出目录` | $1 | `output/sugar_streaming` | DA3的输出目录 |
+| `场景名称` | $2 | `my_scene` | 场景名称 |
+| `迭代次数` | $3 | `30000` | 训练迭代数（7k/15k/30k） |
+| `导出mesh` | $4 | `no` | `yes`=训练后导出TSDF mesh |
+
+**2DGS 内置正则化**（无需手动配置）：
+- `lambda_normal = 0.05`：渲染法线 vs 表面法线一致性（iteration > 7000 启用）
+- `lambda_dist = 0.0`：高斯分布正则化（iteration > 3000 启用）
+
+### `da3_to_3dgs.sh`（最快：纯 3DGS）
+
+```bash
+# 标准训练（30k迭代，~20分钟）
+./da3_to_3dgs.sh output/sugar_streaming my_scene
+
+# 快速预览
+./da3_to_3dgs.sh output/sugar_streaming my_scene 7000
+```
+
+| 参数 | 位置 | 默认值 | 说明 |
+|------|------|--------|------|
+| `DA3输出目录` | $1 | `output/sugar_streaming` | DA3的输出目录 |
+| `场景名称` | $2 | `my_scene` | 场景名称 |
+| `迭代次数` | $3 | `30000` | 训练迭代数 |
+
+### `da3_to_sugar_pipeline.sh`（最慢：SuGaR 完整流程）
 
 ```bash
 cd /home/ltx/projects/Depth-Anything-3
@@ -452,7 +528,9 @@ Coarse SuGaR 训练在 15000 迭代时会保存 checkpoint。如果中断，需�
 
 ```
 /home/ltx/projects/Depth-Anything-3/
-├── da3_to_sugar_pipeline.sh          # 一键Pipeline脚本
+├── da3_to_2dgs.sh                    # ⭐ DA3 → 2DGS Pipeline（推荐）
+├── da3_to_3dgs.sh                    # DA3 → 纯3DGS Pipeline（最快）
+├── da3_to_sugar_pipeline.sh          # DA3 → SuGaR Pipeline（最慢，含mesh）
 ├── convert_da3_to_colmap.py          # DA3 → COLMAP文本格式转换
 ├── colmap_text_to_binary.py          # COLMAP文本 → 二进制转换
 ├── output/sugar_streaming/           # DA3的输出
@@ -465,11 +543,24 @@ Coarse SuGaR 训练在 15000 迭代时会保存 checkpoint。如果中断，需�
 │       ├── sparse/0/*.bin            # 二进制格式
 │       └── images -> extracted/      # 符号链接
 
+/home/ltx/projects/2d-gaussian-splatting/
+├── train.py                          # 2DGS 训练入口
+├── render.py                         # 渲染 + TSDF mesh导出
+├── view.py                           # 实时查看器
+├── full_pipeline.sh                  # 视频 → 2DGS（含COLMAP）
+├── data/<scene_name>/                # 输入数据
+│   ├── sparse/0/                     # COLMAP二进制
+│   └── images/                       # 图像
+└── output/<scene_name>/
+    ├── point_cloud/iteration_<N>/    # 2DGS PLY
+    └── train/ours_<N>/               # 渲染图 + mesh
+
 /home/ltx/projects/SuGaR/
-├── train_full_pipeline.py            # 完整流程入口 ⭐
+├── train_full_pipeline.py            # SuGaR 完整流程入口
 ├── train.py                          # 底层训练（被full_pipeline调用）
 ├── train_fast.py                     # 快速训练（无mesh）
 ├── train_improved.py                 # 改进训练（无mesh）
+├── gaussian_splatting/train.py       # Vanilla 3DGS 训练
 ├── sugar_trainers/
 │   ├── coarse_density_and_dn_consistency.py  # dn_consistency 训练器
 │   ├── coarse_sdf.py                         # sdf 训练器
@@ -480,6 +571,7 @@ Coarse SuGaR 训练在 15000 迭代时会保存 checkpoint。如果中断，需�
 │   └── images/                       # 图像
 └── output/
     ├── vanilla_gs/<scene>/           # Vanilla 3DGS checkpoint
+    ├── 3dgs/<scene>/                 # da3_to_3dgs.sh 输出
     ├── coarse/<scene>/               # Coarse SuGaR 模型
     ├── refined_ply/<scene>/          # Refined PLY (用于查看器)
     └── refined_mesh/<scene>/         # Textured OBJ (用于Blender)
