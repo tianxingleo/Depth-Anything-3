@@ -209,6 +209,19 @@ This fork includes additional tools and documentation for enhanced user experien
   - Example: `python process_video.py` (edit paths in script)
 
 **🎯 3D Gaussian Splatting**
+
+**DA3 × DN-Splatter Pipeline** (推荐)
+- `run_da3_to_dn_splatter_pipeline.py` - End-to-end pipeline: DA3 → DN-Splatter → 3DGS PLY
+  - 自动转换 DA3 Streaming 输出为 DN-Splatter 格式
+  - 支持深度约束和法线约束，消除白墙漂浮物
+  - 自动训练 30000 步并导出标准 PLY
+  - 内存优化：支持 RTX 5070，<12GB VRAM
+- `run_da3_to_dn_splatter.py` - Standalone DA3 to DN-Splatter converter
+- `run_direct_dn_splatter.py` - Direct DN-Splatter training
+- `batch_export_ply.py` - Batch export multiple checkpoints to PLY
+- See: [DN_SPLATTER_PIPELINE_GUIDE.md](docs/DN_SPLATTER_PIPELINE_GUIDE.md) for complete workflow
+
+**Classic 3DGS**
 - `generate_3dgs.py` - Direct 3DGS generation from DA3 outputs
 - `run_da3_3dgs.sh` - Automated 3DGS pipeline
 - `run_gradio_direct.sh` - Gradio-based 3DGS UI
