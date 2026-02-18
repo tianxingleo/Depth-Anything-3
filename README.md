@@ -383,6 +383,14 @@ python benchmark.py
 
 ## 📚 Useful Documentation
 
+### Pipeline & Usage
+- 🎯 [DA3 → SuGaR Pipeline Guide](DA3_TO_SUGAR_PIPELINE.md) - 完整pipeline文档
+- ⚡ [DA3 → SuGaR Quick Start](DA3_TO_SUGAR_QUICKSTART.md) - 快速开始指南
+- 🎯 [SuGaR Modes Technical Details](SUGAR_MODES_TECHNICAL_DETAILS.md) - 模式技术对比
+- 🧠 [SDF Regularization Guide](SDF_REGULARIZATION_GUIDE.md) - **SDF约束详细使用指南**
+- 📋 [SuGaR Official Default Iterations](SUGAR_OFFICIAL_DEFAULT_ITERATIONS.md) - 官方默认迭代次数
+
+### Core Documentation
 - 🖥️ [Command Line Interface](docs/CLI.md)
 - 📑 [Python API](docs/API.md)
 - 📊 [Benchmark Evaluation](docs/BENCHMARK.md)

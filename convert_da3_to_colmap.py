@@ -227,9 +227,9 @@ def convert_to_colmap(base_dir, output_dir):
         else:
             shutil.rmtree(colmap_img_dir)
 
-    # 尝试创建符号链接
+    # 尝试创建符号链接（使用绝对路径，确保在任何工作目录下都能解析）
     try:
-        os.symlink(img_dir, colmap_img_dir)
+        os.symlink(os.path.abspath(img_dir), colmap_img_dir)
         print(f"  ✅ 创建符号链接: {colmap_img_dir} -> {img_dir}")
     except OSError:
         print("  符号链接失败，复制图像...")

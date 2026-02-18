@@ -122,8 +122,13 @@ cp "$COLMAP_TEXT_DIR/sparse/0"/*.bin "$SUGAR_DATA_DIR/sparse/0/"
 # 复制图像
 echo "  复制图像..."
 if [ -L "$COLMAP_TEXT_DIR/images" ]; then
-    # 如果是符号链接，复制目标
-    LINK_TARGET="$(readlink -f "$COLMAP_TEXT_DIR/images")"
+    # 如果是符号链接，尝试解析目标
+    LINK_TARGET="$(readlink -f "$COLMAP_TEXT_DIR/images" 2>/dev/null)"
+    if [ -z "$LINK_TARGET" ] || [ ! -d "$LINK_TARGET" ]; then
+        # 符号链接损坏或相对路径无法解析，直接使用已知的源目录
+        echo "  ⚠️ 符号链接无法解析，使用源图像目录: $DA3_OUTPUT_DIR/extracted"
+        LINK_TARGET="$DA3_OUTPUT_DIR/extracted"
+    fi
     echo "  复制图像源: $LINK_TARGET -> $SUGAR_DATA_DIR/images"
     cp -r "$LINK_TARGET"/* "$SUGAR_DATA_DIR/images/"
 elif [ -d "$COLMAP_TEXT_DIR/images" ]; then
@@ -135,7 +140,7 @@ fi
 
 # 统计文件数量
 CAMERA_COUNT=$(ls -1 "$SUGAR_DATA_DIR/sparse/0"/*.bin 2>/dev/null | wc -l)
-IMAGE_COUNT=$(ls -1 "$SUGAR_DATA_DIR/images"/*.jpg 2>/dev/null | wc -l)
+IMAGE_COUNT=$(ls -1 "$SUGAR_DATA_DIR/images"/*.jpg "$SUGAR_DATA_DIR/images"/*.png "$SUGAR_DATA_DIR/images"/*.jpeg 2>/dev/null | wc -l)
 
 echo "  ✅ 复制了 $CAMERA_COUNT 个COLMAP文件"
 echo "  ✅ 复制了 $IMAGE_COUNT 张图像"

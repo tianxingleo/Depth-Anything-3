@@ -76,7 +76,9 @@ chmod +x /home/ltx/projects/Depth-Anything-3/convert_da3_to_colmap.py
 - **[正则化方法]**: 正则化方法（可选，默认：dn_consistency）
   - `dn_consistency` - 深度一致性正则化（推荐，最佳网格质量）
   - `density` - 密度正则化
-  - `sdf` - SDF正则化
+  - `sdf` - SDF正则化（理论最优，计算开销大）
+
+**正则化方法详细说明请参考**: [正则化方法对比](#正则化方法对比)
 
 - **[精炼时间]**: 精炼时间（可选，默认：short）
   - `short` - 短精炼（2k迭代，快速）
@@ -303,6 +305,266 @@ python3 /home/ltx/projects/Depth-Anything-3/colmap_text_to_binary.py \
    读取二进制COLMAP数据
    进行3D重建训练
    ```
+
+## 正则化方法对比
+
+### dn_consistency（推荐）
+
+**特点**:
+- ✅ 最佳网格质量
+- ✅ 深度一致性正则化
+- ✅ 法向量一致性损失
+- ⚠️ 计算开销中等
+
+**适用场景**:
+- 任何需要高质量网格的场景
+- 推荐作为默认选择
+- 平衡质量和速度
+
+**时间参考（RTX 5070）**:
+- 快速预览: 15-30分钟
+- 标准质量: 30-60分钟
+- 高质量: 60-120分钟
+
+### density
+
+**特点**:
+- ✅ 较快的训练速度
+- ✅ 网格质量不错
+- ✅ 简单实现
+
+**适用场景**:
+- 需要平衡速度和质量
+- 需要快速迭代
+- 简单场景
+
+**时间参考（RTX 5070）**:
+- 快速预览: 15-30分钟
+- 标准质量: 30-60分钟
+- 高质量: 60-120分钟
+
+### sdf
+
+**特点**:
+- ✅ 理论上最佳的表面表示
+- ✅ SDF提供强几何约束
+- ✅ 适合复杂场景
+- ⚠️ 计算开销最大
+- ⚠️ 训练时间最长
+
+**适用场景**:
+- 需要理论最优
+- 有充足计算资源和时间
+- 追求最高质量
+- 复杂背景场景
+
+**时间参考（RTX 5070）**:
+- 快速预览: 20-40分钟
+- 标准质量: 40-80分钟
+- 高质量: 80-160分钟
+
+### 对比总结
+
+| 方法 | 网格质量 | 速度 | SDF使用 | 推荐度 |
+|------|---------|------|---------|--------|
+| **dn_consistency** | ⭐⭐⭐⭐⭐ | 中等 | ❌ | ⭐⭐⭐⭐⭐⭐ |
+| **density** | ⭐⭐⭐⭐ | 快 | ❌ | ⭐⭐⭐⭐⭐ |
+| **sdf** | ⭐⭐⭐⭐ | 慢 | ✅ | ⭐⭐⭐ |
+
+## SDF约束详细使用指南
+
+### SDF是什么？
+
+SDF（Signed Distance Field，有符号距离场）是一个函数，对于空间中的每个点，返回到最近表面的距离：
+- **正距离**: 点在表面外部
+- **负距离**: 点在表面内部
+- **零距离**: 点在表面上
+
+### SDF正则化的作用
+
+1. **强制高斯在表面附近** - 从高斯内部采样点，计算SDF值
+2. **提供强几何约束** - 使用SDF值作为目标密度
+3. **改善表面质量** - 减少空洞和伪影
+4. **理论最优** - SDF是精确的表面表示
+
+### 使用SDF约束的命令
+
+#### 快速预览 + SDF
+
+```bash
+cd /home/ltx/projects/Depth-Anything-3
+
+./da3_to_sugar_pipeline.sh \
+  output/sugar_streaming \
+  test_scene \
+  sdf \
+  short \
+  false \
+  true
+```
+
+#### 标准质量 + SDF
+
+```bash
+cd /home/ltx/projects/Depth-Anything-3
+
+./da3_to_sugar_pipeline.sh \
+  output/sugar_streaming \
+  standard_scene \
+  sdf \
+  short \
+  true \
+  false
+```
+
+#### 高质量 + SDF
+
+```bash
+cd /home/ltx/projects/Depth-Anything-3
+
+./da3_to_sugar_pipeline.sh \
+  output/sugar_streaming \
+  high_quality_scene \
+  sdf \
+  long \
+  true \
+  false
+```
+
+### SDF详细参数
+
+SDF正则化的关键参数（在`coarse_sdf.py`中）:
+
+```python
+# SDF采样参数
+n_samples_for_sdf_regularization = 2048      # SDF采样点数
+sdf_sampling_scale_factor = 2.0             # 采样缩放
+
+# SDF损失权重
+use_sdf_estimation_loss = True           # 使用SDF估计损失
+sdf_estimation_factor = 0.01             # SDF损失权重
+sdf_estimation_mode = 'sdf'             # 模式：'sdf' 或 'density'
+
+# 表面约束
+enforce_samples_to_be_on_surface = True   # 强制样本在表面
+```
+
+### SDF优缺点
+
+#### ✅ 优势
+- **理论最优**: SDF提供精确的表面表示
+- **强约束**: 强制高斯在表面附近
+- **复杂场景**: 适合复杂背景和遮挡场景
+- **高质量**: 提供最佳的表面质量
+
+#### ⚠️ 劣势
+- **计算开销大**: 需要在高斯内部采样点
+- **训练时间长**: 比其他正则化方法慢2-3倍
+- **VRAM占用高**: 需要更多显存
+- **不稳定**: 可能导致训练不稳定
+
+### SDF vs 其他方法
+
+| 特性 | SDF | dn_consistency | density |
+|------|-----|---------------|---------|
+| **理论基础** | 有符号距离场 | 深度-法线一致性 | 密度场 |
+| **计算复杂度** | 高 | 中等 | 低 |
+| **训练速度** | 慢 | 中等 | 快 |
+| **网格质量** | 最佳 | 最佳 | 很好 |
+| **VRAM占用** | 高 | 中等 | 低 |
+| **适用场景** | 复杂、追求最优 | 一般场景 | 简单、快速 |
+
+### SDF使用建议
+
+#### ✅ 适合使用SDF的场景
+- 需要理论最优的表面表示
+- 复杂背景场景（多个物体、遮挡）
+- 有充足的计算资源和时间
+- 追求最高质量
+- 场景几何复杂（薄结构、透明物体）
+
+#### ⚠️ 不适合使用SDF的场景
+- 快速测试和迭代
+- 计算资源有限
+- 需要快速输出
+- 简单场景（dn_consistency足够）
+- 显存不足（<16GB）
+
+### 时间对比（RTX 5070）
+
+| 模式 | dn_consistency | density | sdf |
+|------|---------------|---------|-----|
+| **快速预览** | 15-30分钟 | 15-30分钟 | 20-40分钟 |
+| **标准质量** | 30-60分钟 | 30-60分钟 | 40-80分钟 |
+| **高质量** | 60-120分钟 | 60-120分钟 | 80-160分钟 |
+
+### 故障排除
+
+#### 问题1: 训练速度很慢
+
+**症状**: SDF训练比预期慢很多倍
+
+**解决**:
+1. 检查GPU是否正确使用: `nvidia-smi`
+2. 减少SDF采样点数: 修改`coarse_sdf.py`中的`n_samples_for_sdf_regularization`
+3. 使用`density`或`dn_consistency`代替
+
+#### 问题2: VRAM不足
+
+**症状**: CUDA out of memory错误
+
+**解决**:
+1. 减少图像分辨率
+2. 减少SDF采样点数
+3. 使用`density`正则化
+4. 减少批次大小
+
+#### 问题3: 训练不稳定
+
+**症状**: Loss波动或NaN
+
+**解决**:
+1. 降低SDF损失权重: `sdf_estimation_factor`
+2. 禁用`enforce_samples_to_be_on_surface`
+3. 使用`dn_consistency`代替
+
+### 推荐配置
+
+#### 测试场景
+```bash
+# 使用density快速测试
+./da3_to_sugar_pipeline.sh \
+  output/sugar_streaming \
+  test_scene \
+  density \
+  short \
+  false \
+  true
+```
+
+#### 标准场景
+```bash
+# 使用dn_consistency（推荐）
+./da3_to_sugar_pipeline.sh \
+  output/sugar_streaming \
+  standard_scene \
+  dn_consistency \
+  short \
+  true \
+  false
+```
+
+#### 复杂场景
+```bash
+# 使用SDF
+./da3_to_sugar_pipeline.sh \
+  output/sugar_streaming \
+  complex_scene \
+  sdf \
+  long \
+  true \
+  false
+```
 
 ## 相关资源
 

@@ -130,7 +130,7 @@ python run_viewer.py -p output/refined_ply/my_scene/*.ply
 |------|------|------|
 | 正则化方法 | dn_consistency | 推荐，最佳网格质量 |
 |  | density | 密度正则化 |
-|  | sdf | SDF正则化 |
+|  | sdf | SDF正则化（理论最优，慢） |
 | 精炼时间 | short | 2k迭代，快速 |
 |  | medium | 7k迭代 |
 |  | long | 15k迭代，高质量 |
@@ -138,6 +138,29 @@ python run_viewer.py -p output/refined_ply/my_scene/*.ply
 |  | false | 200k顶点 |
 | 快速模式 | true | 跳过mesh，节省50%时间 |
 |  | false | 完整流程 |
+
+### SDF正则化
+
+**SDF（有符号距离场）正则化**提供理论最优的表面表示，但计算开销较大。
+
+**使用方法**:
+```bash
+./da3_to_sugar_pipeline.sh <DA3输出> <场景名> sdf <其他参数>
+```
+
+**特点**:
+- ✅ 理论最优的表面表示
+- ✅ 适合复杂场景
+- ⚠️ 计算开销大（慢2-3倍）
+- ⚠️ 训练时间长
+
+**使用场景**:
+- ✅ 需要最高质量
+- ✅ 复杂背景场景
+- ✅ 有充足时间和计算资源
+- ⚠️ 不适合快速迭代
+
+**详细说明请参考**: [DA3_TO_SUGAR_PIPELINE.md](DA3_TO_SUGAR_PIPELINE.md#sdf约束详细使用指南)
 
 ## 故障排除
 

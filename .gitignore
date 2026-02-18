@@ -44,3 +44,10 @@ weights/dino_salad.ckpt
 # 大型视频和图片
 assets/images/demo320-2.gif
 assets/examples/robot_unitree.mp4
+
+# 训练输出和日志
+da3_dn_splatter_output/
+
+*.ckpt
+*.txt
+*.ply
