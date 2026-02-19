@@ -40,7 +40,7 @@ All models are trained exclusively on **public academic datasets**.
 
 
 ## 📰 News
-- **18-02-2026:** 🎯 **智能对齐脚本 V5 发布**！支持自适应尺度和 DBSCAN 聚类分析，完美解决复杂伪影场景的对齐问题。详见 [对齐 Pipeline 指南](docs/ALIGNMENT_PIPELINE_GUIDE.md)。
+- **18-02-2026:** 🎯 **智能对齐脚本 V7 发布**！采用 XY 紧凑度判定算法，完美解决桌面物体 vs 桌底伪影的区分问题。详见 [对齐 Pipeline 指南](docs/ALIGNMENT_PIPELINE_GUIDE.md)。
 - **18-02-2026:** 🚀 **DA3 → 3DGS 双重对齐 Pipeline** 上线！结合 COLMAP 和 Open3D 的优势，实现训练前粗对齐 + 训练后精细校正。
 - **11-12-2025:** 🚀 New models and [**DA3-Streaming**](da3_streaming/README.md) released! Handle ultra-long video sequence inference with less than 12GB GPU memory via sliding-window streaming inference. Special thanks to [Kai Deng](https://github.com/DengKaiCQ) for his contribution to DA3-Streaming!
 - **08-12-2025:** 📊 [Benchmark evaluation pipeline](docs/BENCHMARK.md) released! Evaluate pose estimation & 3D reconstruction on 5 datasets.
@@ -207,10 +207,13 @@ Model = create_object(load_config("path/to/new/config"))
 **完整 3D 重建生态系统**：
 
 1. **🎯 智能点云对齐系统**（新增，2026-02-18）
-   - **V5 智能对齐脚本**：自适应尺度 + DBSCAN 聚类分析
+   - **V7 智能对齐脚本**：XY 紧凑度判定（推荐用于桌面物体场景）
+     - 选择"分布更聚焦"的一侧作为正面
      - 自动计算场景尺度，动态调整参数
      - 支持毫米/米/任意比例单位
-     - 完美解决复杂伪影场景的对齐问题
+   - **V4 智能对齐脚本**：DBSCAN 聚类判定
+     - 自适应尺度 + 聚类连通性分析
+     - 适用于复杂伪影场景
    - **DA3 → 3DGS 双重对齐 Pipeline**：
      - 训练前 COLMAP 对齐（曼哈顿世界假设）
      - 训练后 Open3D RANSAC 精细校正
@@ -253,10 +256,13 @@ Model = create_object(load_config("path/to/new/config"))
 #### 🎯 3D Gaussian Splatting Pipelines
 
 **智能点云对齐系统**（新增，2026-02-18）
-- `align_target_object_ply.py` - **V5 智能对齐脚本**
+- `align_target_object_plyv7.py` - **V7 智能对齐脚本**（推荐）
+  - XY 紧凑度判定，选择"分布更聚焦"的一侧
+  - 适用于桌面物体 vs 桌底伪影的区分
   - 自适应尺度计算，支持任意单位模型
+- `align_target_object_ply.py` - **V4 智能对齐脚本**
   - DBSCAN 聚类分析，智能判定正反方向
-  - 解决复杂伪影场景的对齐问题
+  - 适用于复杂伪影场景
 - `run_da3_to_3dgs_aligned.py` - **双重对齐 Pipeline**
   - COLMAP + Open3D 双重对齐
   - 训练前粗对齐 + 训练后精细校正
@@ -341,6 +347,111 @@ Model = create_object(load_config("path/to/new/config"))
 - `weights/model.safetensors` - DA3 模型检查点
 - `weights/config.json` - 模型配置
 - `weights/dino_salad.ckpt` - SALAD 权重
+
+---
+
+### 📁 输出目录结构
+
+#### DA3 主输出目录
+
+```
+output/
+├── sugar_streaming/              # SuGaR streaming 输出（默认）
+│   ├── camera_poses.ply         # 相机位姿点云
+│   ├── camera_poses.txt         # 相机位姿文本
+│   ├── intrinsic.txt            # 相机内参
+│   ├── loop_closures.txt        # 闭环检测结果
+│   ├── colmap_data/            # COLMAP 数据（二进制）
+│   ├── colmap_text/            # COLMAP 数据（文本格式）
+│   ├── glomap_ws/              # GLOMAP 工作空间
+│   ├── pcd/                   # 点云文件
+│   ├── extracted/              # 提取的图像
+│   ├── results_output/         # 结果输出
+│   ├── da3_3dgs_pipeline/     # 3DGS 训练输出
+│   ├── da3_3dgs_colmap_aligned_pipeline/   # COLMAP 对齐后的3DGS
+│   └── da3_3dgs_aligned_pipeline/         # 融合对齐后的3DGS
+├── video_depth/                # 视频深度估计输出
+├── video_test/                # 测试视频输出
+├── sugar_video/               # SuGaR 视频处理输出
+├── da3_3dgs/                # DA3 3DGS 输出
+├── quick_mesh/               # 快速mesh输出
+├── da3_dn_splatter_dataset/    # DA3→DN-Splatter 数据集
+└── da3_dn_splatter_output/    # DA3→DN-Splatter 输出
+```
+
+#### 跨项目输出
+
+- **SuGaR**: `~/projects/SuGaR/output/3dgs/` - DA3→3DGS PLY
+- **DN-Splatter**: `~/projects/dn-splatter/output/` - DN-Splatter 训练输出
+
+### 🔗 数据流向与集成
+
+#### DA3 → 3DGS Pipeline
+
+```
+视频 → DA3 (深度估计+位姿估计) → colmap_text/ → 3DGS 训练 → PLY 文件
+```
+
+#### 跨项目集成
+
+```
+DA3 output/
+├── colmap_text/              # 文本格式COLMAP数据
+│   ├───► SuGaR/output/3dgs/     (DA3→3DGS PLY)
+│   └───► dn-splatter/            # 深度先验
+└── camera_poses.txt
+```
+
+#### 输出数据层级
+
+```
+基础层 (DA3)
+  ├── colmap_text/              # 文本格式COLMAP数据
+  ├── colmap_data/              # 二进制格式COLMAP数据
+  ├── camera_poses.txt         # 相机位姿文本
+  ├── pcd/                     # 点云文件
+  └── depth图像               # 深度估计结果
+
+中级层 (3DGS训练)
+  ├── da3_3dgs_pipeline/       # 纯3DGS训练输出
+  ├── da3_2dgs_pipeline/       # 2DGS训练输出
+  └── da3_dn_splatter_dataset/   # DN-Splatter数据集
+
+高级层 (高质量输出)
+  ├── SuGaR/output/             # SuGaR训练输出（跨项目）
+  │   ├── vanilla_gs/           # Vanilla 3DGS
+  │   ├── coarse/               # Coarse SuGaR
+  │   ├── refined/              # Refined SuGaR
+  │   └── refined_mesh/         # Mesh输出
+  └── dn-splatter/output/       # DN-Splatter输出（跨项目）
+
+后处理层 (对齐和优化)
+  ├── da3_3dgs_aligned_pipeline/        # COLMAP对齐
+  ├── da3_3dgs_colmap_aligned_pipeline/ # Open3D对齐
+  └── da3_3dgs_aligned_pipeline/       # 双重对齐
+```
+
+### 🎯 快速选择指南
+
+#### 根据需求选择脚本
+
+| 需求 | 推荐脚本 | 预计时间 | 说明 |
+|------|---------|---------|------|
+| 最快速度获取3DGS | `da3_to_3dgs.sh` | 15-30分钟 | 纯3DGS训练 |
+| 高质量几何 | `da3_to_2dgs.sh` | 15-30分钟 | 2DGS，几何质量更好 |
+| 最高质量+Mesh | `da3_to_sugar_pipeline.sh` | 2-3小时 | SuGaR完整流程 |
+| 推荐方案（双重对齐） | `run_da3_to_3dgs_aligned.py` | 15-30分钟 | COLMAP+Open3D |
+| 批量扶正已有PLY | `batch_align_existing_ply.py` | - | 批量对齐 |
+
+#### 对齐脚本选择
+
+| 场景 | 推荐脚本 | 原因 |
+|------|---------|------|
+| 桌面物体场景 | `align_target_object_plyv7.py` | XY紧凑度判定，区分物体vs桌底 |
+| 复杂伪影场景 | `align_target_object_ply.py` | DBSCAN聚类，处理伪影 |
+| 训练前粗对齐 | `da3_to_3dgs_aligned_colmap.sh` | COLMAP model_aligner |
+| 训练后精细校正 | `da3_to_3dgs_aligned_open3d.sh` | Open3D RANSAC |
+| 双重对齐（推荐） | `run_da3_to_3dgs_aligned.py` | COLMAP（训练前）+ Open3D（训练后） |
 
 ---
 
