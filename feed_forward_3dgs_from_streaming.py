@@ -7,6 +7,13 @@
 1. 几何完全连续，无“分块”现象。
 2. 颜色直接源自图像，无“怪异”色差。
 3. 严格遵循 Streaming 的位姿和深度。
+
+使用命令：
+/home/ltx/my_envs/gs_linux_backup/bin/python feed_forward_3dgs_from_streaming.py \
+    --streaming-dir output/sugar_streaming \
+    --output-dir output/feed_forward_3dgs_full_standard \
+    --frame-interval 5 \
+    --conf-threshold 0.9
 """
 
 import os
@@ -28,7 +35,7 @@ from depth_anything_3.utils.gsply_helpers import export_ply, inverse_sigmoid
 
 def load_streaming_results(streaming_dir: Path) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     results_dir = streaming_dir / "results_output"
-    npz_files = sorted(results_dir.glob("frame_*.npz"))
+    npz_files = sorted(list(results_dir.glob("frame_*.npz")), key=lambda p: int(p.stem.split('_')[-1]))
     if not npz_files: raise ValueError("没找到 npz 文件")
     
     first_data = np.load(npz_files[0])
@@ -105,6 +112,12 @@ def unproject_points(depth_map, K, E, image, conf_map, sample_ratio=1.0, conf_th
     # Stack (N, 3)
     points_c = np.stack([x_c, y_c, z_c], axis=-1)
     
+    # -------------------------------------------------------------
+    # 恢复纯净数据，移除之前的 Hardcode 补丁。
+    # 真正的坐标系转换现在由 modes 字典在导出时处理。
+    # -------------------------------------------------------------
+    # points_c = points_c * np.array([1, -1, -1])
+
     # Transform to World: P_w = E @ P_c (assuming E is C2W)
     # E acts on [x,y,z,1]. Or R*p + t
     R_cw = E[:3, :3]
@@ -213,12 +226,12 @@ def main():
 
     export_ply(
         means=cat_means,
-        scales=cat_scales, # export_ply takes linear scale (and applies log internally)
+        scales=cat_scales, 
         rotations=cat_rotations,
         harmonics=harmonics,
-        opacities=opacities_logit, # export_ply expects logits
+        opacities=opacities_logit,
         path=ply_path,
-        shift_and_scale=False, # Disable auto-centering/scaling to preserve Metric space
+        shift_and_scale=False,
         save_sh_dc_only=True,
         match_3dgs_mcmc_dev=False
     )
