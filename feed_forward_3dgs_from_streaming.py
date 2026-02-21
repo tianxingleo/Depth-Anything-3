@@ -10,7 +10,7 @@
 
 使用命令：
 /home/ltx/my_envs/gs_linux_backup/bin/python feed_forward_3dgs_from_streaming.py \
-    --streaming-dir output/sugar_streaming \
+    --streaming-dir output/sugar_streaming1 \
     --output-dir output/feed_forward_3dgs_full_standard \
     --frame-interval 5 \
     --conf-threshold 0.9

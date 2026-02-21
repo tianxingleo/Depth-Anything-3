@@ -297,7 +297,7 @@ def run_dn_splatter_training(dataset_dir: Path, output_dir: Path, experiment_nam
         "--pipeline.model.max-gs-num", "2000000",           # 高斯球上限 200万
         "--pipeline.model.sh-degree", "3",                  # SH阶数恢复为3, 更好的颜色质量
         # ===== 数据加载加速 =====
-        "--pipeline.datamanager.num-workers", "4",          # 多线程加载数据, 提升GPU利用率
+        "--pipeline.datamanager.dataloader-num-workers", "4", # 多线程加载数据, 提升GPU利用率
         # ===== Checkpoint 保存 (每5000步保存一次, 防止翻车) =====
         "--steps-per-save", "5000",
         "--save-only-latest-checkpoint", "False",

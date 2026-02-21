@@ -5,13 +5,13 @@
 set -e
 
 # 配置
-VIDEO_PATH="/home/ltx/projects/SuGaR/video.mp4"
-EXTRACT_DIR="/home/ltx/projects/Depth-Anything-3/output/sugar_streaming/extracted"
-OUTPUT_DIR="/home/ltx/projects/Depth-Anything-3/output/sugar_streaming"
+VIDEO_PATH="/home/ltx/projects/Depth-Anything-3/video3.mp4"
+EXTRACT_DIR="/home/ltx/projects/Depth-Anything-3/output/sugar_streaming1/extracted"
+OUTPUT_DIR="/home/ltx/projects/Depth-Anything-3/output/sugar_streaming1"
 CONFIG="/home/ltx/projects/Depth-Anything-3/da3_streaming/configs/base_config.yaml"
 
 # 抽帧参数
-FPS=1  # 每秒抽 1 帧
+FPS=5  # 每秒抽 1 帧
 SCALE="scale=720:-1"  # 720p（最长边 720 像素）
 
 # 激活环境
